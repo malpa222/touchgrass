@@ -4,59 +4,92 @@ import (
 	"strconv"
 )
 
-type Box interface{}
-type List []Box
-type Dictionary map[string]Box
+type List []any
+type Dictionary map[string]any
 
 func GetString(buf []byte) (input []byte, output string) {
 	length := ""
 
 	for i, b := range buf {
-		if b == ':' {
-			temp := i + 1
-			strlen, err := strconv.Atoi(length)
-
-			if err == nil {
-				strlen += temp
-				return buf[strlen:], string(buf[temp:strlen])
-			}
+		if b != ':' {
+			length += string(b)
+			continue
 		}
 
-		length += string(b)
+		if num, err := strconv.Atoi(length); err == nil {
+			temp := i + 1
+			num += temp
+
+			return buf[num:], string(buf[temp:num])
+		}
 	}
 
 	return buf, ""
 }
 
 func GetInt(buf []byte) (input []byte, output int) {
-	if buf[0] == 'i' {
-		str := ""
+	if buf[0] != 'i' {
+		return nil, 0
+	}
 
-		for i := 1; i < len(buf); i++ {
-			if buf[i] == 'e' {
-				num, err := strconv.Atoi(str)
+	str := ""
 
-				if err == nil {
-					return buf[i+1:], num
-				}
-			}
-
+	for i := 1; i < len(buf); i++ {
+		if buf[i] != 'e' {
 			str += string(buf[i])
+			continue
+		}
+
+		if num, err := strconv.Atoi(str); err == nil {
+			return buf[i+1:], num
 		}
 	}
 
-	return nil, 0
+	return buf, 0
 }
 
-func GetList(data []byte) (input []byte, output *List) {
-	// l4:spam4:eggse => ['spam', 'eggs']
+func GetList(buf []byte) (input []byte, output List) {
+	if buf[0] != 'l' {
+		return nil, nil
+	}
 
+	var list List
+	var temp = buf[1:]
+
+	for i := 1; i < len(temp); i++ {
+		if temp[0] == 'e' {
+			break
+		}
+
+		var val any
+
+		temp, val = InferType(temp)
+		list = append(list, val)
+	}
+
+	return temp[1:], list
+}
+
+func GetDict(buf []byte) (input []byte, output Dictionary) {
+	if buf[0] != 'd' {
+		return nil, nil
+	}
 	return nil, nil
 }
 
-func GetDict(data []byte) (input []byte, output *Dictionary) {
-	// d3:cow3:moo4:spam4:eggse =>  {'cow': 'moo', 'spam': 'eggs'}
-	// d4:spaml1:a1:bee => {'spam': ['a', 'b']}
+func InferType(buf []byte) (input []byte, output any) {
+	switch buf[0] {
+	case 'i':
+		return GetInt(buf)
+	case 'l':
+		return GetList(buf)
+	case 'd':
+		return GetDict(buf)
+	default:
+		if _, err := strconv.Atoi(string(buf[0])); err == nil {
+			return GetString(buf)
+		}
+	}
 
-	return nil, nil
+	return buf, buf
 }
