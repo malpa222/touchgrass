@@ -28,10 +28,6 @@ func GetString(buf []byte) (input []byte, output string) {
 }
 
 func GetInt(buf []byte) (input []byte, output int) {
-	if buf[0] != 'i' {
-		return nil, 0
-	}
-
 	str := ""
 
 	for i := 1; i < len(buf); i++ {
@@ -49,10 +45,6 @@ func GetInt(buf []byte) (input []byte, output int) {
 }
 
 func GetList(buf []byte) (input []byte, output List) {
-	if buf[0] != 'l' {
-		return nil, nil
-	}
-
 	var list List
 	var temp = buf[1:]
 
@@ -71,10 +63,24 @@ func GetList(buf []byte) (input []byte, output List) {
 }
 
 func GetDict(buf []byte) (input []byte, output Dictionary) {
-	if buf[0] != 'd' {
-		return nil, nil
+	dict := Dictionary{}
+	var temp = buf[1:]
+
+	for i := 1; i < len(temp); i++ {
+		if temp[0] == 'e' {
+			break
+		}
+
+		var val any
+		var key string
+
+		temp, key = GetString(temp)
+		temp, val = InferType(temp)
+
+		dict[key] = val
 	}
-	return nil, nil
+
+	return temp[1:], dict
 }
 
 func InferType(buf []byte) (input []byte, output any) {
