@@ -4,8 +4,9 @@ import (
 	"strconv"
 )
 
-type List []any
-type Dictionary map[string]any
+type Box any
+type List []Box
+type Dictionary map[string]Box
 
 func GetString(buf []byte) (input []byte, output string) {
 	length := ""
@@ -55,7 +56,7 @@ func GetList(buf []byte) (input []byte, output List) {
 
 		var val any
 
-		temp, val = InferType(temp)
+		temp, val = inferType(temp)
 		list = append(list, val)
 	}
 
@@ -75,7 +76,7 @@ func GetDict(buf []byte) (input []byte, output Dictionary) {
 		var key string
 
 		temp, key = GetString(temp)
-		temp, val = InferType(temp)
+		temp, val = inferType(temp)
 
 		dict[key] = val
 	}
@@ -83,7 +84,7 @@ func GetDict(buf []byte) (input []byte, output Dictionary) {
 	return temp[1:], dict
 }
 
-func InferType(buf []byte) (input []byte, output any) {
+func inferType(buf []byte) (input []byte, output Box) {
 	switch buf[0] {
 	case 'i':
 		return GetInt(buf)
