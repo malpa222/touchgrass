@@ -1,8 +1,8 @@
 package torrent
 
 import (
-	"bytes"
-	"encoding/gob"
+	"crypto/sha1"
+	"errors"
 	"io/ioutil"
 	"touchgrass/torrent/bencode"
 )
@@ -16,14 +16,6 @@ type Torrent struct {
 	CreationDate int
 }
 
-type torrentInfo struct {
-	Name        string
-	PieceLength int
-	Pieces      string
-	Length      int
-	Path        []string
-}
-
 func ParseTorrent(path string) (*Torrent, error) {
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -31,35 +23,33 @@ func ParseTorrent(path string) (*Torrent, error) {
 	}
 
 	_, rawTorrent := bencode.GetDict(buf)
+	rawInfo, ok := rawTorrent["info"].(bencode.Dictionary)
+	if !ok {
+		return nil, errors.New("missing the info dictionary")
+	}
 
-	torrent := &Torrent{
+	infoBytes, err := bencode.Marshal(rawInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Torrent{
+		InfoHash:     sha1.Sum(*infoBytes),
 		Announce:     rawTorrent["announce"].(string),
 		CreatedBy:    rawTorrent["created by"].(string),
 		CreationDate: rawTorrent["creation date"].(int),
+		PieceHashes:  splitPieces(rawInfo["pieces"].(string)),
+		PieceLength:  rawInfo["piece length"].(int),
+	}, nil
+}
+
+func splitPieces(data string) [][20]byte {
+	var chunks [][20]byte
+
+	for i := 0; i < len(data); i += 20 {
+		temp := []byte(data[i : i+20])
+		chunks = append(chunks, *(*[20]byte)(temp))
 	}
 
-	if rawInfo, ok := rawTorrent["info"]; ok {
-		rawInfo := rawInfo.(bencode.Dictionary)
-
-		// copy the rawInfo map
-		var temp bencode.Dictionary
-		for k, v := range rawInfo {
-			temp[k] = v
-		}
-
-		var hashBuf bytes.Buffer
-		enc := gob.NewEncoder(&hashBuf)
-		if err := enc.Encode(temp); err != nil {
-
-		}
-
-		//torrent.Info = &Info{
-		//	Name:        rawInfo["name"].(string),
-		//	PieceLength: rawInfo["piece length"].(int),
-		//	Pieces:      rawInfo["pieces"].(string),
-		//	Length:      rawInfo["length"].(int),
-		//}
-	}
-
-	return torrent, nil
+	return chunks
 }
