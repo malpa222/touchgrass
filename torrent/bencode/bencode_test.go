@@ -2,6 +2,7 @@ package bencode
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -135,5 +136,14 @@ func TestGetDictTrailing(t *testing.T) {
 
 	if !bytes.Equal(in, want1) || !reflect.DeepEqual(want2, dict) {
 		t.Errorf("\nExpected: %v, %v\nGot: %v, %v", want1, want2, in, dict)
+	}
+}
+
+func TestMarshal(t *testing.T) {
+	_, dict := GetDict([]byte("d4:key1i15e4:key2d4:key1li13e4:testeeeli420e4:teste"))
+	if rawBytes, err := Marshal(dict); err != nil {
+		t.Errorf("\nAaaawaria:\n%#v", err)
+	} else {
+		fmt.Printf("%#v", rawBytes)
 	}
 }

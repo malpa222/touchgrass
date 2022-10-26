@@ -1,6 +1,8 @@
 package bencode
 
 import (
+	"bytes"
+	"encoding/gob"
 	"strconv"
 )
 
@@ -82,6 +84,21 @@ func GetDict(buf []byte) (input []byte, output Dictionary) {
 	}
 
 	return temp[1:], dict
+}
+
+func Marshal(box Box) (out *[]byte, err error) {
+	var buf bytes.Buffer
+
+	gob.Register(List{})
+	gob.Register(Dictionary{})
+
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(box); err != nil {
+		return nil, err
+	}
+
+	temp := buf.Bytes()
+	return &temp, nil
 }
 
 func inferType(buf []byte) (input []byte, output Box) {
