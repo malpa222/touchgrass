@@ -1,10 +1,11 @@
 package tracker
 
 import (
-	"crypto/sha1"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 	t "touchgrass/torrent"
 )
 
@@ -18,7 +19,6 @@ const (
 )
 
 type TrackerReq struct {
-	PeerID     [20]byte
 	Port       int
 	Uploaded   int
 	Downloaded int
@@ -52,10 +52,9 @@ func buildUrl(torrent *t.Torrent, req *TrackerReq) (string, error) {
 		compact = "1"
 	}
 
-	hash := sha1.Sum([]byte(torrent.Info))
 	params := url.Values{
-		"info_hash":  []string{string(sha1.Sum(req.InfoHash[:])[:])},
-		"peer_id":    []string{string(req.PeerID[:])},
+		"info_hash":  []string{string(torrent.InfoHash[:])},
+		"peer_id":    []string{createPeerId()},
 		"port":       []string{strconv.Itoa(req.Port)},
 		"uploaded":   []string{strconv.Itoa(req.Uploaded)},
 		"downloaded": []string{strconv.Itoa(req.Downloaded)},
@@ -65,4 +64,16 @@ func buildUrl(torrent *t.Torrent, req *TrackerReq) (string, error) {
 
 	base.RawQuery = params.Encode()
 	return base.String(), nil
+}
+
+func createPeerId() string {
+	rand.Seed(time.Now().UnixNano())
+	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPRSTUWQXYZ1234567890"
+
+	id := make([]byte, 20)
+	for i := 0; i < 20; i++ {
+		id[i] = charset[rand.Intn(len(charset))]
+	}
+
+	return string(id)
 }
