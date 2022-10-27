@@ -22,25 +22,48 @@ func ParseTorrent(path string) (*Torrent, error) {
 		return nil, err
 	}
 
-	_, rawTorrent := bencode.Decode(buf)
-	rawInfo, ok := rawTorrent["info"].(bencode.Dictionary)
-	if !ok {
-		return nil, errors.New("missing the info dictionary")
+	// get the underlying value and assert if the file is using correct format
+	_, decoded := bencode.Decode(buf)
+	decTorrent, err := getDict(decoded)
+	if err != nil {
+		return nil, err
 	}
 
-	infoBytes, err := bencode.ToBytes(rawInfo)
+	decInfo, err := getDict(decTorrent["info"])
+	if err != nil {
+		return nil, err
+	}
+
+	hash, err := createInfoHash(decInfo)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Torrent{
-		InfoHash:     sha1.Sum(*infoBytes),
-		Announce:     rawTorrent["announce"].(string),
-		CreatedBy:    rawTorrent["created by"].(string),
-		CreationDate: rawTorrent["creation date"].(int),
-		PieceHashes:  splitPieces(rawInfo["pieces"].(string)),
-		PieceLength:  rawInfo["piece length"].(int),
+		InfoHash:     hash,
+		Announce:     decTorrent["announce"].(string),
+		CreatedBy:    decTorrent["created by"].(string),
+		CreationDate: decTorrent["creation date"].(int),
+		PieceHashes:  splitPieces(decInfo["pieces"].(string)),
+		PieceLength:  decInfo["piece length"].(int),
 	}, nil
+}
+
+func getDict(decoded any) (map[string]any, error) {
+	switch decoded.(type) {
+	case map[string]any:
+		return decoded.(map[string]any), nil
+	default:
+		return nil, errors.New("invalid torrent file")
+	}
+}
+
+func createInfoHash(info map[string]any) ([20]byte, error) {
+	if encoded, err := bencode.Encode(info); err != nil {
+		return [20]byte{}, err
+	} else {
+		return sha1.Sum([]byte(encoded)), nil
+	}
 }
 
 func splitPieces(data string) [][20]byte {

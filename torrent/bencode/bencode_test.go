@@ -58,7 +58,7 @@ func TestListSimple(t *testing.T) {
 	in, list := Decode(testVal1)
 
 	var want1 []byte
-	want2 := List{32, "andrzej"}
+	want2 := []any{32, "andrzej"}
 
 	if !bytes.Equal(in, want1) || !reflect.DeepEqual(want2, list) {
 		t.Errorf("\nExpected: %v, %v\nGot: %v, %v", want1, want2, in, list)
@@ -71,7 +71,7 @@ func TestListNested(t *testing.T) {
 	in, list := Decode(testVal1)
 
 	var want1 []byte
-	want2 := List{32, "test", List{14}, "qwerty"}
+	want2 := []any{32, "test", []any{14}, "qwerty"}
 
 	if !bytes.Equal(in, want1) || !reflect.DeepEqual(want2, list) {
 		t.Errorf("\nExpected: %v, %v\nGot: %v, %v", want1, want2, list, in)
@@ -83,7 +83,7 @@ func TestListTrailing(t *testing.T) {
 	in, list := Decode(testVal1)
 
 	want1 := []byte("i123e")
-	want2 := List{32, "test", List{14}, "qwerty"}
+	want2 := []any{32, "test", []any{14}, "qwerty"}
 
 	if !bytes.Equal(in, want1) || !reflect.DeepEqual(want2, list) {
 		t.Errorf("\nExpected: %v, %v\nGot: %v, %v", want1, want2, list, in)
@@ -95,7 +95,7 @@ func TestDict(t *testing.T) {
 	in, dict := Decode(testVal1)
 
 	var want1 []byte
-	want2 := Dictionary{
+	want2 := map[string]any{
 		"key1": 15,
 		"key2": "qwerty",
 	}
@@ -110,10 +110,10 @@ func TestDictNested(t *testing.T) {
 	in, dict := Decode(testVal1)
 
 	var want1 []byte
-	want2 := Dictionary{
+	want2 := map[string]any{
 		"key1": 15,
-		"key2": Dictionary{
-			"key1": List{13, "test"},
+		"key2": map[string]any{
+			"key1": []any{13, "test"},
 		},
 	}
 
@@ -127,10 +127,10 @@ func TestDictTrailing(t *testing.T) {
 	in, dict := Decode(testVal1)
 
 	want1 := []byte("li420e4:teste")
-	want2 := Dictionary{
+	want2 := map[string]any{
 		"key1": 15,
-		"key2": Dictionary{
-			"key1": List{13, "test"},
+		"key2": map[string]any{
+			"key1": []any{13, "test"},
 		},
 	}
 
@@ -162,7 +162,7 @@ func TestEncodeString(t *testing.T) {
 func TestEncodeList(t *testing.T) {
 	str1 := "andrzejmatus"
 	str2 := "szioq"
-	test := List{12345, str1, str2}
+	test := []any{12345, str1, str2}
 	want := fmt.Sprintf("li%de%d:%s%d:%se", test[0], len(str1), str1, len(str2), str2)
 
 	res, err := Encode(test)
@@ -175,7 +175,7 @@ func TestEncodeList(t *testing.T) {
 func TestEncodeDict(t *testing.T) {
 	str1 := "andrzejmatus"
 	str2 := "szioq"
-	test := Dictionary{
+	test := map[string]any{
 		"key1": str1,
 		"key2": str2,
 		"key3": 123456,
@@ -191,8 +191,8 @@ func TestEncodeDict(t *testing.T) {
 
 func TestEncodeDictEmbedList(t *testing.T) {
 	str1 := "andrzejmatus"
-	list := List{123456, str1}
-	test := Dictionary{
+	list := []any{123456, str1}
+	test := map[string]any{
 		"key1": str1,
 		"key2": list,
 		"key3": 123456,

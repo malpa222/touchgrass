@@ -9,11 +9,7 @@ import (
 	"strconv"
 )
 
-type Box any
-type List []Box
-type Dictionary map[string]Box
-
-func Decode(buf []byte) (input []byte, output Box) {
+func Decode(buf []byte) (input []byte, output any) {
 	switch buf[0] {
 	case 'i':
 		return getInt(buf)
@@ -30,14 +26,13 @@ func Decode(buf []byte) (input []byte, output Box) {
 	return buf, buf
 }
 
-func Encode(data Box) (string, error) {
+func Encode(data any) (string, error) {
 	switch v := data.(type) {
 	case int:
 		return fmt.Sprintf("i%de", v), nil
 	case string:
 		return fmt.Sprintf("%d:%s", len(v), v), nil
-	case []Box:
-	case List:
+	case []any:
 		var temp string
 		for _, elem := range v {
 			result, _ := Encode(elem)
@@ -45,8 +40,7 @@ func Encode(data Box) (string, error) {
 		}
 
 		return fmt.Sprintf("l%se", temp), nil
-	case map[string]Box:
-	case Dictionary:
+	case map[string]any:
 		var temp string
 		for key, elem := range v {
 			result, _ := Encode(key)
@@ -59,22 +53,20 @@ func Encode(data Box) (string, error) {
 		return fmt.Sprintf("d%se", temp), nil
 	default:
 		msg := fmt.Sprintf("Cannot encode the type %v.\n Supported types: %v, %v, %v, %v",
-			reflect.TypeOf(v), reflect.Int, reflect.String, reflect.TypeOf(List{}), reflect.TypeOf(Dictionary{}))
+			reflect.TypeOf(v), reflect.Int, reflect.String, reflect.TypeOf([]any{}), reflect.TypeOf(map[string]any{}))
 
 		return "", errors.New(msg)
 	}
-
-	return "", nil
 }
 
-func ToBytes(box Box) (out *[]byte, err error) {
+func ToBytes(data any) (out *[]byte, err error) {
 	var buf bytes.Buffer
 
-	gob.Register(List{})
-	gob.Register(Dictionary{})
-
 	encoder := gob.NewEncoder(&buf)
-	if err := encoder.Encode(box); err != nil {
+	gob.Register([]any{})
+	gob.Register(map[string]any{})
+
+	if err := encoder.Encode(data); err != nil {
 		return nil, err
 	}
 
@@ -91,8 +83,7 @@ func getString(buf []byte) (input []byte, output string) {
 			continue
 		}
 
-		num, err := strconv.Atoi(length)
-		if err != nil {
+		if num, err := strconv.Atoi(length); err == nil {
 			temp := i + 1
 			num += temp
 
@@ -120,8 +111,8 @@ func getInt(buf []byte) (input []byte, output int) {
 	return buf, 0
 }
 
-func getList(buf []byte) (input []byte, output List) {
-	var list List
+func getList(buf []byte) (input []byte, output []any) {
+	var list []any
 	var temp = buf[1:]
 
 	for i := 1; i < len(temp); i++ {
@@ -138,8 +129,8 @@ func getList(buf []byte) (input []byte, output List) {
 	return temp[1:], list
 }
 
-func getDict(buf []byte) (input []byte, output Dictionary) {
-	dict := Dictionary{}
+func getDict(buf []byte) (input []byte, output map[string]any) {
+	dict := map[string]any{}
 	var temp = buf[1:]
 
 	for i := 1; i < len(temp); i++ {
