@@ -1,8 +1,12 @@
 package tracker
 
 import (
+	"encoding/binary"
+	"errors"
+	"fmt"
 	"io"
 	"math/rand"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -11,25 +15,26 @@ import (
 	"touchgrass/torrent/bencode"
 )
 
-type Event byte
-
-const (
-	Started Event = iota
-	Stopped
-	Empty
-	Completed
-)
-
-type TrackerReq struct {
+type Req struct {
 	Port       int
 	Uploaded   int
 	Downloaded int
 	Left       int
-	Event      Event
 	Compact    bool
 }
 
-func GetPeers(torrent *t.Torrent, req *TrackerReq) (bencode.Box, error) {
+type Resp struct {
+	Failure  string
+	Interval int
+	Peers    []*Peer
+}
+
+type Peer struct {
+	IP   net.IP
+	Port uint16
+}
+
+func GetPeers(torrent *t.Torrent, req *Req) (*Resp, error) {
 	trackerUrl, err := buildUrl(torrent, req)
 	if err != nil {
 		return nil, err
@@ -46,11 +51,14 @@ func GetPeers(torrent *t.Torrent, req *TrackerReq) (bencode.Box, error) {
 		return nil, err
 	}
 
-	_, temp := bencode.Decode(body)
-	return temp, nil
+	if decodedResp, err := unmarshalResponse(body); err != nil {
+		return nil, err
+	} else {
+		return decodedResp, nil
+	}
 }
 
-func buildUrl(torrent *t.Torrent, req *TrackerReq) (string, error) {
+func buildUrl(torrent *t.Torrent, req *Req) (string, error) {
 	base, err := url.Parse(torrent.Announce)
 	if err != nil {
 		return "", err
@@ -80,4 +88,62 @@ func createPeerId() string {
 	}
 
 	return string(id)
+}
+
+func unmarshalResponse(body []byte) (*Resp, error) {
+	_, decoded := bencode.Decode(body)
+	var temp map[string]any
+
+	// expecting a dictionary
+	switch v := decoded.(type) {
+	case map[string]any:
+		temp = v
+	default:
+		return nil, errors.New(fmt.Sprintf("got an incorrect response from server:\n%v", v))
+	}
+
+	// first check if the server returned failure
+	if failure, hasFailure := temp["failure reason"].(string); hasFailure {
+		return &Resp{Failure: failure}, nil
+	}
+
+	// then check if it has returned peer list at all
+	var peersBlob []byte
+	if blob, hasPeers := temp["peers"]; !hasPeers {
+		return nil, errors.New("missing peer list")
+	} else {
+		peersBlob = []byte(blob.(string))
+	}
+
+	// unmarshall the peer list from bytes to Peer struct
+	// according to bep_0023, a peer in compact form consists of:
+	// 4 bytes -> IP address
+	// 2 bytes -> port
+	peerSize := 6
+	if len(peersBlob)%peerSize != 0 {
+		return nil, errors.New(fmt.Sprintf("received incorrect peer list:\n%v", peersBlob))
+	}
+
+	numPeers := len(peersBlob) / peerSize
+	peers := make([]*Peer, numPeers)
+	for i := 0; i < numPeers; i++ {
+		offset := i * peerSize
+
+		peers[i] = &Peer{
+			IP:   peersBlob[offset : offset+4],
+			Port: binary.BigEndian.Uint16(peersBlob[offset+4 : offset+6]),
+		}
+	}
+
+	// once peers are processed, check if the tracker returned the interval
+	interval, hasInterval := temp["interval"].(int)
+	if !hasInterval {
+		return nil, errors.New("received incorrect response: missing interval")
+	}
+
+	return &Resp{
+		Failure:  "",
+		Interval: interval,
+		Peers:    nil,
+	}, nil
 }

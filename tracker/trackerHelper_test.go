@@ -13,7 +13,7 @@ func TestTrackerResponse(t *testing.T) {
 		return
 	}
 
-	req := &TrackerReq{
+	req := &Req{
 		Port: 6881,
 	}
 
