@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-const PATH = "./debian.torrent"
+const PATH = "./testfile.torrent"
 
 func TestParseTorrent(t *testing.T) {
 	if torr, err := ParseTorrent(PATH); err != nil || torr == nil {

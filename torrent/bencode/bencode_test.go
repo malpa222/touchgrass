@@ -7,9 +7,9 @@ import (
 	"testing"
 )
 
-func TestGetStringSimple(t *testing.T) {
+func TestStringSimple(t *testing.T) {
 	str1 := []byte("6:qwerty")
-	in, out := GetString(str1)
+	in, out := Decode(str1)
 
 	want1 := "qwerty"
 
@@ -18,9 +18,9 @@ func TestGetStringSimple(t *testing.T) {
 	}
 }
 
-func TestGetStringTrailing(t *testing.T) {
+func TestStringTrailing(t *testing.T) {
 	str1 := []byte("6:qwertyi14e")
-	in, out := GetString(str1)
+	in, out := Decode(str1)
 
 	want1 := []byte("i14e")
 	want2 := "qwerty"
@@ -30,9 +30,9 @@ func TestGetStringTrailing(t *testing.T) {
 	}
 }
 
-func TestGetInt(t *testing.T) {
+func TestInt(t *testing.T) {
 	int1 := []byte("i13e")
-	in, out := GetInt(int1)
+	in, out := Decode(int1)
 
 	want1 := 13
 
@@ -41,9 +41,9 @@ func TestGetInt(t *testing.T) {
 	}
 }
 
-func TestGetIntTrailing(t *testing.T) {
+func TestIntTrailing(t *testing.T) {
 	int1 := []byte("i13e4:test")
-	in, out := GetInt(int1)
+	in, out := Decode(int1)
 
 	want1 := []byte("4:test")
 	want2 := 13
@@ -53,9 +53,9 @@ func TestGetIntTrailing(t *testing.T) {
 	}
 }
 
-func TestGetListSimple(t *testing.T) {
+func TestListSimple(t *testing.T) {
 	testVal1 := []byte("li32e7:andrzeje")
-	in, list := GetList(testVal1)
+	in, list := Decode(testVal1)
 
 	var want1 []byte
 	want2 := List{32, "andrzej"}
@@ -66,9 +66,9 @@ func TestGetListSimple(t *testing.T) {
 
 }
 
-func TestGetListNested(t *testing.T) {
+func TestListNested(t *testing.T) {
 	testVal1 := []byte("li32e4:testli14ee6:qwertye")
-	in, list := GetList(testVal1)
+	in, list := Decode(testVal1)
 
 	var want1 []byte
 	want2 := List{32, "test", List{14}, "qwerty"}
@@ -78,9 +78,9 @@ func TestGetListNested(t *testing.T) {
 	}
 }
 
-func TestGetListTrailing(t *testing.T) {
+func TestListTrailing(t *testing.T) {
 	testVal1 := []byte("li32e4:testli14ee6:qwertyei123e")
-	in, list := GetList(testVal1)
+	in, list := Decode(testVal1)
 
 	want1 := []byte("i123e")
 	want2 := List{32, "test", List{14}, "qwerty"}
@@ -90,9 +90,9 @@ func TestGetListTrailing(t *testing.T) {
 	}
 }
 
-func TestGetDict(t *testing.T) {
+func TestDict(t *testing.T) {
 	testVal1 := []byte("d4:key1i15e4:key26:qwertye")
-	in, dict := GetDict(testVal1)
+	in, dict := Decode(testVal1)
 
 	var want1 []byte
 	want2 := Dictionary{
@@ -105,9 +105,9 @@ func TestGetDict(t *testing.T) {
 	}
 }
 
-func TestGetDictNested(t *testing.T) {
+func TestDictNested(t *testing.T) {
 	testVal1 := []byte("d4:key1i15e4:key2d4:key1li13e4:testeee")
-	in, dict := GetDict(testVal1)
+	in, dict := Decode(testVal1)
 
 	var want1 []byte
 	want2 := Dictionary{
@@ -122,9 +122,9 @@ func TestGetDictNested(t *testing.T) {
 	}
 }
 
-func TestGetDictTrailing(t *testing.T) {
+func TestDictTrailing(t *testing.T) {
 	testVal1 := []byte("d4:key1i15e4:key2d4:key1li13e4:testeeeli420e4:teste")
-	in, dict := GetDict(testVal1)
+	in, dict := Decode(testVal1)
 
 	want1 := []byte("li420e4:teste")
 	want2 := Dictionary{
@@ -139,9 +139,84 @@ func TestGetDictTrailing(t *testing.T) {
 	}
 }
 
-func TestMarshal(t *testing.T) {
-	_, dict := GetDict([]byte("d4:key1i15e4:key2d4:key1li13e4:testeeeli420e4:teste"))
-	if rawBytes, err := Marshal(dict); err != nil {
+func TestEncodeInt(t *testing.T) {
+	want := "i123456e"
+	res, _ := Encode(123456)
+
+	if res != want {
+		t.Errorf("\nThe strings don't match.\nExpected: %s\nGot: %s", want, res)
+	}
+}
+
+func TestEncodeString(t *testing.T) {
+	test := "tentekstma18znakow"
+	want := fmt.Sprintf("%d:%s", len(test), test)
+
+	res, _ := Encode(test)
+
+	if res != want {
+		t.Errorf("\nThe strings don't match.\nExpected: %s\nGot: %s", want, res)
+	}
+}
+
+func TestEncodeList(t *testing.T) {
+	str1 := "andrzejmatus"
+	str2 := "szioq"
+	test := List{12345, str1, str2}
+	want := fmt.Sprintf("li%de%d:%s%d:%se", test[0], len(str1), str1, len(str2), str2)
+
+	res, err := Encode(test)
+	if res != want || err != nil {
+		t.Errorf("\nThe strings don't match.\nExpected: %s\nGot: %s", want, res)
+		t.Errorf("%v", err)
+	}
+}
+
+func TestEncodeDict(t *testing.T) {
+	str1 := "andrzejmatus"
+	str2 := "szioq"
+	test := Dictionary{
+		"key1": str1,
+		"key2": str2,
+		"key3": 123456,
+	}
+	want := fmt.Sprintf("d4:key1%d:%s4:key2%d:%s4:key3i%dee", len(str1), str1, len(str2), str2, test["key3"])
+
+	res, err := Encode(test)
+	if res != want || err != nil {
+		t.Errorf("\nThe strings don't match.\nExpected: %s\nGot: %s", want, res)
+		t.Errorf("%v", err)
+	}
+}
+
+func TestEncodeDictEmbedList(t *testing.T) {
+	str1 := "andrzejmatus"
+	list := List{123456, str1}
+	test := Dictionary{
+		"key1": str1,
+		"key2": list,
+		"key3": 123456,
+	}
+	want := fmt.Sprintf("d4:key1%d:%s4:key2li%de%d:%se4:key3i%dee",
+		len(str1), str1, list[0], len(str1), str1, test["key3"])
+
+	res, err := Encode(test)
+	if res != want || err != nil {
+		t.Errorf("\nThe strings don't match.\nExpected: %s\nGot: %s", want, res)
+		t.Errorf("%v", err)
+	}
+}
+
+func TestEncodeStruct(t *testing.T) {
+	_, err := Encode(bytes.Buffer{})
+	if err == nil {
+		t.Errorf("\nExpected an error, got nil")
+	}
+}
+
+func TestToBytes(t *testing.T) {
+	_, dict := Decode([]byte("d4:key1i15e4:key2d4:key1li13e4:testeeeli420e4:teste"))
+	if rawBytes, err := ToBytes(dict); err != nil {
 		t.Errorf("\nAaaawaria:\n%#v", err)
 	} else {
 		fmt.Printf("%#v", rawBytes)

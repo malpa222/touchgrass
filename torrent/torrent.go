@@ -22,13 +22,13 @@ func ParseTorrent(path string) (*Torrent, error) {
 		return nil, err
 	}
 
-	_, rawTorrent := bencode.GetDict(buf)
+	_, rawTorrent := bencode.Decode(buf)
 	rawInfo, ok := rawTorrent["info"].(bencode.Dictionary)
 	if !ok {
 		return nil, errors.New("missing the info dictionary")
 	}
 
-	infoBytes, err := bencode.Marshal(rawInfo)
+	infoBytes, err := bencode.ToBytes(rawInfo)
 	if err != nil {
 		return nil, err
 	}

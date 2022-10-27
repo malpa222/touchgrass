@@ -1,12 +1,14 @@
 package tracker
 
 import (
+	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
 	t "touchgrass/torrent"
+	"touchgrass/torrent/bencode"
 )
 
 type Event byte
@@ -27,7 +29,7 @@ type TrackerReq struct {
 	Compact    bool
 }
 
-func GetPeers(torrent *t.Torrent, req *TrackerReq) (*http.Response, error) {
+func GetPeers(torrent *t.Torrent, req *TrackerReq) (bencode.Box, error) {
 	trackerUrl, err := buildUrl(torrent, req)
 	if err != nil {
 		return nil, err
@@ -38,18 +40,20 @@ func GetPeers(torrent *t.Torrent, req *TrackerReq) (*http.Response, error) {
 		return nil, err
 	}
 
-	return resp, nil
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	_, temp := bencode.Decode(body)
+	return temp, nil
 }
 
 func buildUrl(torrent *t.Torrent, req *TrackerReq) (string, error) {
 	base, err := url.Parse(torrent.Announce)
 	if err != nil {
 		return "", err
-	}
-
-	compact := "0"
-	if req.Compact {
-		compact = "1"
 	}
 
 	params := url.Values{
@@ -59,7 +63,7 @@ func buildUrl(torrent *t.Torrent, req *TrackerReq) (string, error) {
 		"uploaded":   []string{strconv.Itoa(req.Uploaded)},
 		"downloaded": []string{strconv.Itoa(req.Downloaded)},
 		"left":       []string{strconv.Itoa(req.Left)},
-		"compact":    []string{compact},
+		"compact":    []string{"1"},
 	}
 
 	base.RawQuery = params.Encode()

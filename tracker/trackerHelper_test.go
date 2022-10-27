@@ -7,7 +7,7 @@ import (
 )
 
 func TestTrackerResponse(t *testing.T) {
-	torr, err := torrent.ParseTorrent("../torrent/debian.torrent")
+	torr, err := torrent.ParseTorrent("../torrent/testfile.torrent")
 	if err != nil {
 		t.Errorf("%v", err)
 		return
