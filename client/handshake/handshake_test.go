@@ -1,7 +1,6 @@
 package handshake
 
 import (
-	"bytes"
 	"testing"
 	"touchgrass/torrent"
 )
@@ -15,7 +14,7 @@ func TestSerialize(t *testing.T) {
 			PeerID:   torr.InfoHash,
 		}
 
-		ser := Serialize(hs)
+		ser := hs.Serialize()
 		if len(*ser) != 68 {
 			t.Errorf("serialization went wrong, expected 68 byte long array, got:\n%v", ser)
 		}
@@ -31,13 +30,12 @@ func TestDeserialize(t *testing.T) {
 			PeerID:   torr.InfoHash,
 		}
 
-		out := Serialize(hs)
+		out := hs.Serialize()
 		if len(*out) != 68 {
 			t.Errorf("serialization went wrong, expected 68 byte long array, got:\n%v", err)
 		}
 
-		temp := bytes.NewReader(*out)
-		if deser, err := Deserialize(temp); err != nil {
+		if deser, err := Deserialize(out); err != nil {
 			t.Errorf("got an error:\n%v", err)
 		} else if *deser != *hs {
 			t.Errorf("data doesn't match\nexpected:%v\ngot:%v", hs, deser)

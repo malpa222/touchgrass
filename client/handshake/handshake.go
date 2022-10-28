@@ -1,8 +1,8 @@
 package handshake
 
 import (
+	"bytes"
 	"errors"
-	"io"
 )
 
 const pstr = "BitTorrent protocol"
@@ -15,7 +15,7 @@ type Handshake struct {
 	PeerID   [20]byte
 }
 
-func Serialize(hs *Handshake) *[]byte {
+func (hs Handshake) Serialize() *[]byte {
 	buf := make([]byte, 68)
 	buf[0] = lenPstr
 
@@ -28,43 +28,44 @@ func Serialize(hs *Handshake) *[]byte {
 	return &buf
 }
 
-func Deserialize(reader io.Reader) (hs *Handshake, err error) {
+func Deserialize(buf *[]byte) (hs *Handshake, err error) {
+	reader := bytes.NewReader(*buf)
+
 	// check if the protocol length is correct
-	buf := make([]byte, 1)
-	if num, err := reader.Read(buf); err != nil {
+	temp := make([]byte, 1)
+	if num, err := reader.Read(temp); err != nil {
 		return nil, err
-	} else if buf[0] != lenPstr || num == 0 {
+	} else if temp[0] != lenPstr || num == 0 {
 		return nil, errors.New("invalid length")
 	}
 
 	// check if the pstr matches
-	buf = make([]byte, lenPstr)
-	if num, err := reader.Read(buf); err != nil {
+	temp = make([]byte, lenPstr)
+	if num, err := reader.Read(temp); err != nil {
 		return nil, err
-	} else if num != lenPstr || string(buf[:]) != pstr {
+	} else if num != lenPstr || string(temp[:]) != pstr {
 		return nil, errors.New("invalid protocol specification")
 	}
 
 	// check the flags
-	buf = make([]byte, lenReserved)
-	if num, err := reader.Read(buf); err != nil {
+	temp = make([]byte, lenReserved)
+	if num, err := reader.Read(temp); err != nil {
 		return nil, err
 	} else if num != lenReserved {
 		return nil, errors.New("invalid flags")
 	}
 
 	// try the rest of the Handshake
-	buf = make([]byte, 40)
-	if num, err := reader.Read(buf); err != nil {
+	temp = make([]byte, 40)
+	if num, err := reader.Read(temp); err != nil {
 		return nil, err
-	} else if num != len(buf) {
+	} else if num != len(temp) {
 		return nil, errors.New("invalid peer data")
 	}
 
-	// copy the peerID and infohash to new buffers
 	hs = &Handshake{}
-	copy(hs.PeerID[:], buf[:20])
-	copy(hs.InfoHash[:], buf[20:])
+	copy(hs.PeerID[:], temp[:20])
+	copy(hs.InfoHash[:], temp[20:])
 
-	return hs, nil
+	return
 }
