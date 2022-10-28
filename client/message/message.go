@@ -45,7 +45,7 @@ func Deserialize(buf *[]byte) (msg *Message, err error) {
 	if num, err := reader.Read(temp); err != nil {
 		return nil, err
 	} else if num == 0 {
-		return msg, nil // keepalive
+		return // keepalive
 	} else if num != 4 {
 		return nil, errors.New("invalid length")
 	}

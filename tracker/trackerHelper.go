@@ -34,7 +34,7 @@ type Peer struct {
 	Port uint16
 }
 
-func GetPeersHTTP(torrent *t.Torrent, req *Req) (*Resp, error) {
+func GetPeers(torrent *t.Torrent, req *Req) (*Resp, error) {
 	trackerUrl, err := buildUrl(torrent, req)
 	if err != nil {
 		return nil, err
