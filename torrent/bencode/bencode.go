@@ -1,8 +1,6 @@
 package bencode
 
 import (
-	"bytes"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"reflect"
@@ -57,21 +55,6 @@ func Encode(data any) (string, error) {
 
 		return "", errors.New(msg)
 	}
-}
-
-func ToBytes(data any) (out *[]byte, err error) {
-	var buf bytes.Buffer
-
-	encoder := gob.NewEncoder(&buf)
-	gob.Register([]any{})
-	gob.Register(map[string]any{})
-
-	if err := encoder.Encode(data); err != nil {
-		return nil, err
-	}
-
-	temp := buf.Bytes()
-	return &temp, nil
 }
 
 func getString(buf []byte) (input []byte, output string) {

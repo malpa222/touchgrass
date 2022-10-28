@@ -213,12 +213,3 @@ func TestEncodeStruct(t *testing.T) {
 		t.Errorf("\nExpected an error, got nil")
 	}
 }
-
-func TestToBytes(t *testing.T) {
-	_, dict := Decode([]byte("d4:key1i15e4:key2d4:key1li13e4:testeeeli420e4:teste"))
-	if rawBytes, err := ToBytes(dict); err != nil {
-		t.Errorf("\nAaaawaria:\n%#v", err)
-	} else {
-		fmt.Printf("%#v", rawBytes)
-	}
-}

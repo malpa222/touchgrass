@@ -34,7 +34,7 @@ type Peer struct {
 	Port uint16
 }
 
-func GetPeers(torrent *t.Torrent, req *Req) (*Resp, error) {
+func GetPeersHTTP(torrent *t.Torrent, req *Req) (*Resp, error) {
 	trackerUrl, err := buildUrl(torrent, req)
 	if err != nil {
 		return nil, err
@@ -64,9 +64,17 @@ func buildUrl(torrent *t.Torrent, req *Req) (string, error) {
 		return "", err
 	}
 
+	// generate a peer id
+	rand.Seed(time.Now().UnixNano())
+	chars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPRSTUWQXYZ1234567890"
+	id := make([]byte, 20)
+	for i := 0; i < 20; i++ {
+		id[i] = chars[rand.Intn(len(chars))]
+	}
+
 	params := url.Values{
 		"info_hash":  []string{string(torrent.InfoHash[:])},
-		"peer_id":    []string{createPeerId()},
+		"peer_id":    []string{string(id)},
 		"port":       []string{strconv.Itoa(req.Port)},
 		"uploaded":   []string{strconv.Itoa(req.Uploaded)},
 		"downloaded": []string{strconv.Itoa(req.Downloaded)},
@@ -76,18 +84,6 @@ func buildUrl(torrent *t.Torrent, req *Req) (string, error) {
 
 	base.RawQuery = params.Encode()
 	return base.String(), nil
-}
-
-func createPeerId() string {
-	rand.Seed(time.Now().UnixNano())
-	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPRSTUWQXYZ1234567890"
-
-	id := make([]byte, 20)
-	for i := 0; i < 20; i++ {
-		id[i] = charset[rand.Intn(len(charset))]
-	}
-
-	return string(id)
 }
 
 func unmarshalResponse(body []byte) (*Resp, error) {
