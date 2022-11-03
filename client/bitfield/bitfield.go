@@ -16,7 +16,7 @@ func (b Bitfield) FlipBit(index uint) {
 	offset := index % 8  // get the bit index
 
 	// shift one by `offset` bits like: 0b0001 << 3 = 0b1000 -> 8
-	// then OR the shifted byte with the b[byteIdx] and save the result
+	// then XOR the shifted byte with the b[byteIdx] and save the result
 	//
 	// for example, index == 3, so byteIdx == 0, offset = 3 and b[byteIdx] == 0b0101
 	// 0b0001 << 3 == 0b1000 == 8

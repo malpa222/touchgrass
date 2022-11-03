@@ -15,7 +15,7 @@ func TestSerialize(t *testing.T) {
 		}
 
 		ser := hs.Serialize()
-		if len(*ser) != 68 {
+		if len(ser) != 68 {
 			t.Errorf("serialization went wrong, expected 68 byte long array, got:\n%v", ser)
 		}
 	}
@@ -31,7 +31,7 @@ func TestDeserialize(t *testing.T) {
 		}
 
 		out := hs.Serialize()
-		if len(*out) != 68 {
+		if len(out) != 68 {
 			t.Errorf("serialization went wrong, expected 68 byte long array, got:\n%v", err)
 		}
 

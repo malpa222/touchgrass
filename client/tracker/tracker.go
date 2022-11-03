@@ -34,6 +34,10 @@ type Peer struct {
 	Port uint16
 }
 
+func (p *Peer) String() string {
+	return net.JoinHostPort(p.IP.String(), strconv.Itoa(int(p.Port)))
+}
+
 func GetPeers(torrent *t.Torrent, req *Req) (*Resp, error) {
 	trackerUrl, err := buildUrl(torrent, req)
 	if err != nil {

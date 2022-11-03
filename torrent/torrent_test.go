@@ -12,6 +12,4 @@ func TestParseTorrent(t *testing.T) {
 	if err != nil || torr == nil {
 		t.Errorf("Error:\n%v", err)
 	}
-
-	println(torr)
 }

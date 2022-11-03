@@ -15,7 +15,7 @@ type Handshake struct {
 	PeerID   [20]byte
 }
 
-func (hs Handshake) Serialize() *[]byte {
+func (hs *Handshake) Serialize() []byte {
 	buf := make([]byte, 68)
 	buf[0] = lenPstr
 
@@ -25,11 +25,11 @@ func (hs Handshake) Serialize() *[]byte {
 	offset += copy(buf[offset:], hs.InfoHash[:])            // the infohash of the torrent
 	offset += copy(buf[offset:], hs.PeerID[:])              // the peerid used for connecting to tracker
 
-	return &buf
+	return buf
 }
 
-func Deserialize(buf *[]byte) (hs *Handshake, err error) {
-	reader := bytes.NewReader(*buf)
+func Deserialize(buf []byte) (*Handshake, error) {
+	reader := bytes.NewReader(buf)
 
 	// check if the protocol length is correct
 	temp := make([]byte, 1)
@@ -63,9 +63,9 @@ func Deserialize(buf *[]byte) (hs *Handshake, err error) {
 		return nil, errors.New("invalid peer data")
 	}
 
-	hs = &Handshake{}
+	hs := &Handshake{}
 	copy(hs.PeerID[:], temp[:20])
 	copy(hs.InfoHash[:], temp[20:])
 
-	return
+	return hs, nil
 }
