@@ -6,27 +6,32 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
 	"strconv"
-	"time"
 	t "touchgrass/torrent"
 	"touchgrass/torrent/bencode"
 )
 
 type request struct {
-	Port       int
-	Uploaded   int
-	Downloaded int
-	Left       int
+	peerId     [20]byte
+	port       int
+	uploaded   int
+	downloaded int
+	left       int
 }
 
 type response struct {
-	Failure  string
-	Interval int
-	Peers    *[]Peer
+	failure  string
+	interval int
+	peers    *[]Peer
+}
+
+type tracker struct {
+	announce string
+	infoHash [20]byte
+	peerId   [20]byte
 }
 
 type Peer struct {
@@ -38,15 +43,20 @@ func (p *Peer) String() string {
 	return net.JoinHostPort(p.IP.String(), strconv.Itoa(int(p.Port)))
 }
 
-func GetPeers(torrent *t.Torrent) (peers *[]Peer, err error) {
+func GetPeers(peerId [20]byte, torrent *t.Torrent) (peers *[]Peer, err error) {
+	tracker := &tracker{
+		announce: torrent.Announce,
+		infoHash: torrent.InfoHash,
+		peerId:   peerId,
+	}
 	req := &request{
-		Port:       6881,
-		Uploaded:   0,
-		Downloaded: 0,
-		Left:       0,
+		port:       6881,
+		uploaded:   0,
+		downloaded: 0,
+		left:       0,
 	}
 
-	trackerUrl, err := buildUrl(torrent, req)
+	trackerUrl, err := buildUrl(tracker, req)
 	if err != nil {
 		return
 	}
@@ -63,33 +73,27 @@ func GetPeers(torrent *t.Torrent) (peers *[]Peer, err error) {
 	}
 
 	if decoded, err := unmarshalResponse(body); err != nil {
-		return nil, errors.New(decoded.Failure)
+		return nil, errors.New(decoded.failure)
+	} else if decoded.peers == nil {
+		return nil, errors.New("received empty peer list")
 	} else {
-		return decoded.Peers, nil
+		return decoded.peers, nil
 	}
 }
 
-func buildUrl(torrent *t.Torrent, req *request) (string, error) {
-	base, err := url.Parse(torrent.Announce)
+func buildUrl(tracker *tracker, req *request) (string, error) {
+	base, err := url.Parse(tracker.announce)
 	if err != nil {
 		return "", err
 	}
 
-	// generate a peer id
-	rand.Seed(time.Now().UnixNano())
-	chars := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPRSTUWQXYZ1234567890"
-	id := make([]byte, 20)
-	for i := 0; i < 20; i++ {
-		id[i] = chars[rand.Intn(len(chars))]
-	}
-
 	params := url.Values{
-		"info_hash":  []string{string(torrent.InfoHash[:])},
-		"peer_id":    []string{string(id)},
-		"port":       []string{strconv.Itoa(req.Port)},
-		"uploaded":   []string{strconv.Itoa(req.Uploaded)},
-		"downloaded": []string{strconv.Itoa(req.Downloaded)},
-		"left":       []string{strconv.Itoa(req.Left)},
+		"info_hash":  []string{string(tracker.infoHash[:])},
+		"peer_id":    []string{string(tracker.peerId[:])},
+		"port":       []string{strconv.Itoa(req.port)},
+		"uploaded":   []string{strconv.Itoa(req.uploaded)},
+		"downloaded": []string{strconv.Itoa(req.downloaded)},
+		"left":       []string{strconv.Itoa(req.left)},
 		"compact":    []string{"1"},
 	}
 
@@ -111,10 +115,10 @@ func unmarshalResponse(body []byte) (res *response, err error) {
 
 	// first check if the server returned failure
 	if failure, hasFailure := temp["failure reason"].(string); hasFailure {
-		return &response{Failure: failure}, nil
+		return &response{failure: failure}, nil
 	}
 
-	// then check if it has returned peer list at all
+	// then check if it has returned peer list at all and if it's not empty
 	var peersBlob []byte
 	if blob, hasPeers := temp["peers"]; !hasPeers {
 		return nil, errors.New("missing peer list")
@@ -145,12 +149,11 @@ func unmarshalResponse(body []byte) (res *response, err error) {
 	// once peers are processed, check if the tracker returned the interval
 	interval, hasInterval := temp["interval"].(int)
 	if !hasInterval {
-		return nil, errors.New("received incorrect response: missing interval")
+		interval = 15
 	}
 
 	return &response{
-		Failure:  "",
-		Interval: interval,
-		Peers:    &peers,
+		interval: interval,
+		peers:    &peers,
 	}, nil
 }

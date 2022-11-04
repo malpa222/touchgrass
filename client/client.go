@@ -2,8 +2,8 @@ package client
 
 import (
 	"errors"
+	"log"
 	"net"
-	"time"
 	"touchgrass/client/bitfield"
 	"touchgrass/client/handshake"
 	"touchgrass/client/tracker"
@@ -20,8 +20,16 @@ type Client struct {
 	Bitfield bitfield.Bitfield
 }
 
-func (c *Client) connectToPeer() (test int, err error) {
-	conn, err := net.DialTimeout("tcp", c.peer.String(), 3*time.Second)
+func New(peer tracker.Peer, infoHash [20]byte, peerId [20]byte) *Client {
+	return &Client{
+		peer:     peer,
+		infoHash: infoHash,
+		peerId:   peerId,
+	}
+}
+
+func (c *Client) Connect(peer *tracker.Peer) (test int, err error) {
+	conn, err := net.Dial("tcp", peer.String())
 	if err != nil {
 		return
 	}
@@ -39,17 +47,21 @@ func (c *Client) connectToPeer() (test int, err error) {
 		return
 	}
 
-	// send the handshake to the peer
-	var temp [40]byte
+	// read the incoming handshake
+	var temp [68]byte
 	_, err = conn.Read(temp[:])
 	if err != nil {
 		return
 	}
 
 	hs2, err := handshake.Deserialize(temp[:])
-	if hs.InfoHash != hs2.InfoHash {
+	if hs2 == nil {
+		return 0, errors.New("received no handshake")
+	} else if hs.InfoHash != hs2.InfoHash {
 		return 0, errors.New("the handshake is invalid")
 	}
+
+	log.Printf("their handshake:\n %#v", hs2)
 
 	return
 }
