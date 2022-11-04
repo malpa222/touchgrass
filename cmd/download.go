@@ -1,38 +1,44 @@
 /*
-Copyright © 2022 Daniel Lewandowski lewandowski-daniel@protonmail.com
+Copyright © 2022 Daniel Lewandowski malpa222@tutanota.com
 
 */
 
 package cmd
 
 import (
-	"fmt"
+	"log"
+	"touchgrass/client/tracker"
+	t "touchgrass/torrent"
 
 	"github.com/spf13/cobra"
 )
+
+var TorrentPath string
+var Destination string
 
 // downloadCmd represents the download command
 var downloadCmd = &cobra.Command{
 	Use:   "download",
 	Short: `Downloads the files from the supplied torrent file.`,
 	Long:  `Downloads the files from the supplied torrent file.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		torrent, err := t.ParseTorrent(TorrentPath)
+		if err != nil {
+			return err
+		}
 
-		fmt.Println("download called")
+		peers, err := tracker.GetPeers(torrent)
+		log.Println(peers)
+
+		return
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(downloadCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	downloadCmd.PersistentFlags().StringP("torrent", "t", "", "A path to the torrent file")
-	downloadCmd.PersistentFlags().StringP("dest", "d", "", "A download destination")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// downloadCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	downloadCmd.PersistentFlags().StringVarP(
+		&TorrentPath, "torrent", "t", "", "A path to the torrent file")
+	downloadCmd.PersistentFlags().StringVarP(
+		&Destination, "dest", "d", "", "A download destination")
 }

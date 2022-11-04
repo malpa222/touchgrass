@@ -1,5 +1,5 @@
 /*
-Copyright © 2022 Daniel Lewandowski lewandowski-daniel@protonmail.com
+Copyright © 2022 Daniel Lewandowski malpa222@tutanota.com
 
 */
 package main

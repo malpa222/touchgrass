@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net"
 	"net/http"
@@ -15,18 +16,17 @@ import (
 	"touchgrass/torrent/bencode"
 )
 
-type Req struct {
+type request struct {
 	Port       int
 	Uploaded   int
 	Downloaded int
 	Left       int
-	Compact    bool
 }
 
-type Resp struct {
+type response struct {
 	Failure  string
 	Interval int
-	Peers    []*Peer
+	Peers    *[]Peer
 }
 
 type Peer struct {
@@ -38,31 +38,38 @@ func (p *Peer) String() string {
 	return net.JoinHostPort(p.IP.String(), strconv.Itoa(int(p.Port)))
 }
 
-func GetPeers(torrent *t.Torrent, req *Req) (*Resp, error) {
+func GetPeers(torrent *t.Torrent) (peers *[]Peer, err error) {
+	req := &request{
+		Port:       6881,
+		Uploaded:   0,
+		Downloaded: 0,
+		Left:       0,
+	}
+
 	trackerUrl, err := buildUrl(torrent, req)
 	if err != nil {
-		return nil, err
+		return
 	}
-
-	resp, err := http.Get(trackerUrl)
+	res, err := http.Get(trackerUrl)
 	if err != nil {
-		return nil, err
+		return
 	}
+	log.Printf("tracker returned: %d", res.StatusCode)
+	defer res.Body.Close()
 
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	if decodedResp, err := unmarshalResponse(body); err != nil {
-		return nil, err
+	if decoded, err := unmarshalResponse(body); err != nil {
+		return nil, errors.New(decoded.Failure)
 	} else {
-		return decodedResp, nil
+		return decoded.Peers, nil
 	}
 }
 
-func buildUrl(torrent *t.Torrent, req *Req) (string, error) {
+func buildUrl(torrent *t.Torrent, req *request) (string, error) {
 	base, err := url.Parse(torrent.Announce)
 	if err != nil {
 		return "", err
@@ -90,7 +97,7 @@ func buildUrl(torrent *t.Torrent, req *Req) (string, error) {
 	return base.String(), nil
 }
 
-func unmarshalResponse(body []byte) (*Resp, error) {
+func unmarshalResponse(body []byte) (res *response, err error) {
 	_, decoded := bencode.Decode(body)
 	var temp map[string]any
 
@@ -104,7 +111,7 @@ func unmarshalResponse(body []byte) (*Resp, error) {
 
 	// first check if the server returned failure
 	if failure, hasFailure := temp["failure reason"].(string); hasFailure {
-		return &Resp{Failure: failure}, nil
+		return &response{Failure: failure}, nil
 	}
 
 	// then check if it has returned peer list at all
@@ -125,11 +132,11 @@ func unmarshalResponse(body []byte) (*Resp, error) {
 	}
 
 	numPeers := len(peersBlob) / peerSize
-	peers := make([]*Peer, numPeers)
+	peers := make([]Peer, numPeers)
 	for i := 0; i < numPeers; i++ {
 		offset := i * peerSize
 
-		peers[i] = &Peer{
+		peers[i] = Peer{
 			IP:   peersBlob[offset : offset+4],
 			Port: binary.BigEndian.Uint16(peersBlob[offset+4 : offset+6]),
 		}
@@ -141,9 +148,9 @@ func unmarshalResponse(body []byte) (*Resp, error) {
 		return nil, errors.New("received incorrect response: missing interval")
 	}
 
-	return &Resp{
+	return &response{
 		Failure:  "",
 		Interval: interval,
-		Peers:    nil,
+		Peers:    &peers,
 	}, nil
 }

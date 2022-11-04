@@ -13,11 +13,7 @@ func TestTrackerResponse(t *testing.T) {
 		return
 	}
 
-	req := &Req{
-		Port: 6881,
-	}
-
-	peers, err := GetPeers(torr, req)
+	peers, err := GetPeers(torr)
 	if err != nil {
 		t.Errorf("%v", err)
 		return

@@ -1,5 +1,5 @@
 /*
-Copyright © 2022 Daniel Lewandowski lewandowski-daniel@protonmail.com
+Copyright © 2022 Daniel Lewandowski malpa222@tutanota.com
 
 */
 package cmd
@@ -43,5 +43,5 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
