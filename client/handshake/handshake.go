@@ -64,8 +64,8 @@ func Deserialize(buf []byte) (*Handshake, error) {
 	}
 
 	hs := &Handshake{}
-	copy(hs.PeerID[:], temp[:20])
-	copy(hs.InfoHash[:], temp[20:])
+	copy(hs.InfoHash[:], temp[:20])
+	copy(hs.PeerID[:], temp[20:])
 
 	return hs, nil
 }

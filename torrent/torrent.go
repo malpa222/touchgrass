@@ -2,7 +2,9 @@ package torrent
 
 import (
 	"crypto/sha1"
+	"errors"
 	"io/ioutil"
+	"touchgrass/cast"
 	"touchgrass/torrent/bencode"
 )
 
@@ -23,23 +25,49 @@ func ParseTorrent(path string) (*Torrent, error) {
 
 	// get the underlying value and assert if the file is using correct format
 	_, decoded := bencode.Decode(buf)
-	decTorrent, err := getDict(decoded)
+	decTorrent, err := cast.ToDict[string, any](decoded)
 	if err != nil {
 		return nil, err
 	}
 
-	decInfo, err := getDict(decTorrent["info"])
+	decInfo, err := cast.ToDict[string, any](decTorrent["info"])
 	if err != nil {
 		return nil, err
 	}
 
-	announceList, exists := getList(decTorrent["announce-list"])
-	if exists {
-		for _, url := range announceList {
+	/* announce-list is a list of lists with trackers, grouped by the protocol
+	for example: [[https://url1.com, https://url2.com], [udp://url3.com]]
+	it is preferred over announce key */
+	var announceList []string
+	if temp, hasKey := decTorrent["announce-list"]; hasKey {
+		temp, err := cast.ToList[any](temp)
+		if err != nil {
+			return nil, err
+		}
 
+		for _, tier := range temp { // iterate over tier list
+			urlList, err := cast.ToList[any](tier)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, url := range urlList { // iterate over url list
+				url, err := cast.To[string](url)
+				if err != nil {
+					return nil, err
+				}
+
+				announceList = append(announceList, url)
+			}
+		}
+	} else if temp, hasKey := decTorrent["announce"]; hasKey {
+		if url, err := cast.To[string](temp); err != nil {
+			return nil, err
+		} else {
+			announceList = append(announceList, url)
 		}
 	} else {
-
+		return nil, errors.New("missing announce key")
 	}
 
 	hash, err := createInfoHash(decInfo)
@@ -49,7 +77,7 @@ func ParseTorrent(path string) (*Torrent, error) {
 
 	return &Torrent{
 		InfoHash:     hash,
-		Announce:     decTorrent["announce"].(string),
+		Announce:     announceList,
 		CreatedBy:    decTorrent["created by"].(string),
 		CreationDate: decTorrent["creation date"].(int),
 		PieceHashes:  splitPieces(decInfo["pieces"].(string)),

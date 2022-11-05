@@ -120,10 +120,10 @@ func unmarshalResponse(body []byte) (res *response, err error) {
 		peersBlob = []byte(blob.(string))
 	}
 
-	// unmarshall the peer list from bytes to Peer struct
-	// according to bep_0023, a peer in compact form consists of:
-	// 4 bytes -> IP address
-	// 2 bytes -> port
+	/* unmarshall the peer list from bytes to Peer struct
+	according to bep_0023, a peer in compact form consists of:
+	4 bytes -> IP address
+	2 bytes -> port */
 	peerSize := 6
 	if len(peersBlob)%peerSize != 0 {
 		return nil, errors.New(fmt.Sprintf("received incorrect peer list:\n%v", peersBlob))
