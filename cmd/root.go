@@ -1,7 +1,3 @@
-/*
-Copyright © 2022 Daniel Lewandowski malpa222@tutanota.com
-
-*/
 package cmd
 
 import (
@@ -16,13 +12,10 @@ var rootCmd = &cobra.Command{
 	Short: "A CLI BitTorrent client",
 	Long: `A CLI BitTorrent client
 TODO:
-- Multifile support
-- Seeding
-- Use the app as a daemon`,
-
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) {},
+ - Multi file support
+ - Seeding
+ - DHT and UDP peer discovery
+ - Use the app as a daemon`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

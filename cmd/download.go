@@ -1,11 +1,7 @@
-/*
-Copyright © 2022 Daniel Lewandowski malpa222@tutanota.com
-
-*/
-
 package cmd
 
 import (
+	"log"
 	"math/rand"
 	"time"
 	"touchgrass/client"
@@ -66,7 +62,11 @@ func connectToPeers(peers []tracker.Peer, infoHash [20]byte) {
 	for _, p := range peers {
 		c := client.New(p, infoHash, peerId)
 
+		if err := c.Connect(&p); err != nil {
+			log.Println(err)
+			continue
+		}
+
 		clients = append(clients, c)
-		c.Connect(&p)
 	}
 }

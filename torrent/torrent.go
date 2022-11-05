@@ -2,13 +2,12 @@ package torrent
 
 import (
 	"crypto/sha1"
-	"errors"
 	"io/ioutil"
 	"touchgrass/torrent/bencode"
 )
 
 type Torrent struct {
-	Announce     string
+	Announce     []string
 	InfoHash     [20]byte
 	PieceHashes  [][20]byte
 	PieceLength  int
@@ -34,6 +33,15 @@ func ParseTorrent(path string) (*Torrent, error) {
 		return nil, err
 	}
 
+	announceList, exists := getList(decTorrent["announce-list"])
+	if exists {
+		for _, url := range announceList {
+
+		}
+	} else {
+
+	}
+
 	hash, err := createInfoHash(decInfo)
 	if err != nil {
 		return nil, err
@@ -47,15 +55,6 @@ func ParseTorrent(path string) (*Torrent, error) {
 		PieceHashes:  splitPieces(decInfo["pieces"].(string)),
 		PieceLength:  decInfo["piece length"].(int),
 	}, nil
-}
-
-func getDict(decoded any) (map[string]any, error) {
-	switch decoded.(type) {
-	case map[string]any:
-		return decoded.(map[string]any), nil
-	default:
-		return nil, errors.New("invalid torrent file")
-	}
 }
 
 func createInfoHash(info map[string]any) ([20]byte, error) {

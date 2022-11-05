@@ -15,7 +15,9 @@ import (
 )
 
 type request struct {
+	announce   string
 	peerId     [20]byte
+	infoHash   [20]byte
 	port       int
 	uploaded   int
 	downloaded int
@@ -28,12 +30,6 @@ type response struct {
 	peers    *[]Peer
 }
 
-type tracker struct {
-	announce string
-	infoHash [20]byte
-	peerId   [20]byte
-}
-
 type Peer struct {
 	IP   net.IP
 	Port uint16
@@ -44,19 +40,17 @@ func (p *Peer) String() string {
 }
 
 func GetPeers(peerId [20]byte, torrent *t.Torrent) (peers *[]Peer, err error) {
-	tracker := &tracker{
-		announce: torrent.Announce,
-		infoHash: torrent.InfoHash,
-		peerId:   peerId,
-	}
 	req := &request{
+		announce:   torrent.Announce[0], // TODOOOOO
+		peerId:     peerId,
+		infoHash:   torrent.InfoHash,
 		port:       6881,
 		uploaded:   0,
 		downloaded: 0,
 		left:       0,
 	}
 
-	trackerUrl, err := buildUrl(tracker, req)
+	trackerUrl, err := buildUrl(req)
 	if err != nil {
 		return
 	}
@@ -81,15 +75,15 @@ func GetPeers(peerId [20]byte, torrent *t.Torrent) (peers *[]Peer, err error) {
 	}
 }
 
-func buildUrl(tracker *tracker, req *request) (string, error) {
-	base, err := url.Parse(tracker.announce)
+func buildUrl(req *request) (string, error) {
+	base, err := url.Parse(req.announce)
 	if err != nil {
 		return "", err
 	}
 
 	params := url.Values{
-		"info_hash":  []string{string(tracker.infoHash[:])},
-		"peer_id":    []string{string(tracker.peerId[:])},
+		"info_hash":  []string{string(req.infoHash[:])},
+		"peer_id":    []string{string(req.peerId[:])},
 		"port":       []string{strconv.Itoa(req.port)},
 		"uploaded":   []string{strconv.Itoa(req.uploaded)},
 		"downloaded": []string{strconv.Itoa(req.downloaded)},
