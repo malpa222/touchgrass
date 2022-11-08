@@ -1,11 +1,9 @@
 package cmd
 
 import (
-	"log"
 	"math/rand"
 	"time"
-	"touchgrass/client"
-	"touchgrass/client/tracker"
+	c "touchgrass/client"
 	t "touchgrass/torrent"
 
 	"github.com/spf13/cobra"
@@ -18,7 +16,7 @@ var Destination string
 
 // downloadCmd represents the download command
 var downloadCmd = &cobra.Command{
-	Use:   "download [path/to/torrent] [download/location]",
+	Use:   "download -t [path/to/torrent] -d [download/location]",
 	Short: `Downloads the files from the supplied torrent file.`,
 	Long:  `Downloads the files from the supplied torrent file.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -27,12 +25,8 @@ var downloadCmd = &cobra.Command{
 			return err
 		}
 
-		peers, err := tracker.GetPeers(peerId, torrent)
-		if err != nil {
-			return err
-		}
-
-		connectToPeers(*peers, torrent.InfoHash)
+		client := c.New(peerId)
+		client.Download(torrent)
 
 		return nil
 	},
@@ -55,18 +49,4 @@ func init() {
 	}
 
 	peerId = id
-}
-
-func connectToPeers(peers []tracker.Peer, infoHash [20]byte) {
-	var clients []*client.Client
-	for _, p := range peers {
-		c := client.New(p, infoHash, peerId)
-
-		if err := c.Connect(&p); err != nil {
-			log.Println(err)
-			continue
-		}
-
-		clients = append(clients, c)
-	}
 }

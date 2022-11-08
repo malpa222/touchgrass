@@ -4,8 +4,8 @@ import (
 	"crypto/sha1"
 	"errors"
 	"io/ioutil"
-	"touchgrass/cast"
 	"touchgrass/torrent/bencode"
+	"touchgrass/torrent/cast"
 )
 
 type Torrent struct {

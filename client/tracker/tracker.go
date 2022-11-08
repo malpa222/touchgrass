@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -30,18 +29,9 @@ type response struct {
 	peers    *[]Peer
 }
 
-type Peer struct {
-	IP   net.IP
-	Port uint16
-}
-
-func (p *Peer) String() string {
-	return net.JoinHostPort(p.IP.String(), strconv.Itoa(int(p.Port)))
-}
-
 func GetPeers(peerId [20]byte, torrent *t.Torrent) (peers *[]Peer, err error) {
 	req := &request{
-		announce:   torrent.Announce[0], // TODOOOOO
+		announce:   torrent.Announce[0], // TODO
 		peerId:     peerId,
 		infoHash:   torrent.InfoHash,
 		port:       6881,
