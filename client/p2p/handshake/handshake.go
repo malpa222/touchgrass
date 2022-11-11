@@ -22,8 +22,8 @@ func (hs *Handshake) Serialize() []byte {
 	offset := 1
 	offset += copy(buf[offset:], pstr)                      // protocol id
 	offset += copy(buf[offset:], make([]byte, lenReserved)) // empty 8 bytes
-	offset += copy(buf[offset:], hs.InfoHash[:])            // the infohash of the torrent
-	offset += copy(buf[offset:], hs.PeerID[:])              // the peerid used for connecting to tracker
+	offset += copy(buf[offset:], hs.InfoHash[:])            // the info hash of the torrent
+	offset += copy(buf[offset:], hs.PeerID[:])              // the peer id used for connecting to tracker
 
 	return buf
 }

@@ -12,9 +12,9 @@ func TestSerialize(t *testing.T) {
 	}
 
 	ser := msg.Serialize()
-	if len(*ser) != len(s1)+4+1 {
+	if len(ser) != len(s1)+4+1 {
 		t.Errorf("serialization went wrong, expected %v byte long array, got:\n%v",
-			len(s1)+4+1, len(*ser))
+			len(s1)+4+1, len(ser))
 	}
 }
 
@@ -26,12 +26,12 @@ func TestDeserialize(t *testing.T) {
 	}
 
 	ser := msg.Serialize()
-	if len(*ser) != len(s1)+4+1 {
+	if len(ser) != len(s1)+4+1 {
 		t.Errorf("serialization went wrong, expected %v byte long array, got:\n%v",
-			len(s1)+4+1, len(*ser))
+			len(s1)+4+1, len(ser))
 	}
 
-	if _, err := Deserialize(ser); err != nil {
+	if _, err := Deserialize(&ser); err != nil {
 		t.Errorf("got an error:\n%v", err)
 	}
 }

@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"touchgrass/client/p2p"
 	t "touchgrass/torrent"
 )
@@ -46,7 +47,8 @@ func Download(peerId [20]byte, torrent *t.Torrent) (string, error) { // TODO dec
 	}
 
 	for _, peer := range *peers {
-		go startWorker(c, peer)
+		//go startWorker(c, peer)
+		fmt.Println(peer)
 	}
 
 	return "", nil
@@ -58,7 +60,7 @@ func startWorker(client *client, peer p2p.Peer) error {
 	if err != nil {
 		return err
 	}
-	defer p.Connection.Close()
+	defer p.Conn.Close()
 
 	// send unchoke
 	// send interested

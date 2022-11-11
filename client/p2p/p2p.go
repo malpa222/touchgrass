@@ -1,10 +1,8 @@
 package p2p
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"touchgrass/client/p2p/bitfield"
 	"touchgrass/client/p2p/handshake"
@@ -15,9 +13,9 @@ type P2P struct {
 	handshake handshake.Handshake
 	peer      Peer
 
-	Connection net.Conn
-	Chocked    bool
-	Bitfield   bitfield.Bitfield
+	Conn     net.Conn
+	Chocked  bool
+	Bitfield bitfield.Bitfield
 }
 
 func New(peerId [20]byte, infoHash [20]byte, peer Peer) (p2p *P2P, err error) {
@@ -43,20 +41,31 @@ func New(peerId [20]byte, infoHash [20]byte, peer Peer) (p2p *P2P, err error) {
 		handshake: hs,
 		peer:      peer,
 
-		Connection: conn,
-		Chocked:    true,
-		Bitfield:   bf,
+		Conn:     conn,
+		Chocked:  true,
+		Bitfield: bf,
 	}, nil
 }
 
-// Read reads incoming messages
-func (p *P2P) Read(r io.Reader) (message message.Message, err error) {
+// ReadIncoming reads incoming messages
+func (p *P2P) ReadIncoming() (message message.Message, err error) {
+	var buf []byte
+	if _, err := p.Conn.Read(buf); err != nil {
+		return message, err
+	}
+
 	return
 }
 
-// SendRequest sends a piece request to the peer
-func (p *P2P) SendRequest(index int) {
+func (p *P2P) SendMsg(msg message.Message) error {
+	serialized := msg.Serialize()
+	if num, err := p.Conn.Write(serialized); err != nil {
+		return err
+	} else if num != len(serialized) {
+		return errors.New("unable to send whole message. aborting... ")
+	}
 
+	return nil
 }
 
 func shakeHands(hs handshake.Handshake, conn net.Conn) error {
@@ -74,7 +83,7 @@ func shakeHands(hs handshake.Handshake, conn net.Conn) error {
 	}
 
 	// check if handshakes match
-	hs2, err := handshake.Read(bytes.NewReader(temp[:]))
+	hs2, err := handshake.Deserialize(temp[:])
 	if hs2 == nil {
 		return errors.New("received no handshake")
 	} else if hs.InfoHash != hs2.InfoHash {
@@ -85,7 +94,12 @@ func shakeHands(hs handshake.Handshake, conn net.Conn) error {
 }
 
 func getBitfield(conn net.Conn) (bitfield.Bitfield, error) {
-	msg, err := message.Read(conn)
+	var temp []byte
+	if _, err := conn.Read(temp[:]); err != nil {
+		return bitfield.Bitfield{}, err
+	}
+
+	msg, err := message.Deserialize(&temp)
 	if err != nil {
 		return bitfield.Bitfield{}, err
 	}
