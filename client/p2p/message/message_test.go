@@ -1,7 +1,6 @@
 package message
 
 import (
-	"bytes"
 	"testing"
 )
 
@@ -32,8 +31,7 @@ func TestDeserialize(t *testing.T) {
 			len(s1)+4+1, len(*ser))
 	}
 
-	r := bytes.NewReader(*ser)
-	if _, err := Read(r); err != nil {
+	if _, err := Deserialize(ser); err != nil {
 		t.Errorf("got an error:\n%v", err)
 	}
 }

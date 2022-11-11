@@ -1,13 +1,12 @@
 package handshake
 
 import (
-	"bytes"
 	"testing"
 	"touchgrass/torrent"
 )
 
 func TestSerialize(t *testing.T) {
-	if torr, err := torrent.ParseTorrent("../../torrent/testfile.torrent"); err != nil {
+	if torr, err := torrent.ParseTorrent("../../../torrent/testfile.torrent"); err != nil {
 		t.Errorf("got an error:\n%v", err)
 	} else {
 		hs := &Handshake{
@@ -23,7 +22,7 @@ func TestSerialize(t *testing.T) {
 }
 
 func TestDeserialize(t *testing.T) {
-	if torr, err := torrent.ParseTorrent("../../torrent/testfile.torrent"); err != nil {
+	if torr, err := torrent.ParseTorrent("../../../torrent/testfile.torrent"); err != nil {
 		t.Errorf("got an error:\n%v", err)
 	} else {
 		hs := &Handshake{
@@ -36,8 +35,7 @@ func TestDeserialize(t *testing.T) {
 			t.Errorf("serialization went wrong, expected 68 byte long array, got:\n%v", err)
 		}
 
-		r := bytes.NewReader(out)
-		if deser, err := Read(r); err != nil {
+		if deser, err := Deserialize(out); err != nil {
 			t.Errorf("got an error:\n%v", err)
 		} else if *deser != *hs {
 			t.Errorf("data doesn't match\nexpected:%v\ngot:%v", hs, deser)

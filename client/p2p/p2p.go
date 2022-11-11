@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"touchgrass/client/p2p/bitfield"
 	"touchgrass/client/p2p/handshake"
@@ -48,8 +49,14 @@ func New(peerId [20]byte, infoHash [20]byte, peer Peer) (p2p *P2P, err error) {
 	}, nil
 }
 
-func (p *P2P) ReadMessage() (message message.Message, err error) {
+// Read reads incoming messages
+func (p *P2P) Read(r io.Reader) (message message.Message, err error) {
 	return
+}
+
+// SendRequest sends a piece request to the peer
+func (p *P2P) SendRequest(index int) {
+
 }
 
 func shakeHands(hs handshake.Handshake, conn net.Conn) error {
