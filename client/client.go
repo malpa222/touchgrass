@@ -1,7 +1,7 @@
 package client
 
 import (
-	"fmt"
+	"log"
 	"touchgrass/client/p2p"
 	t "touchgrass/torrent"
 )
@@ -46,10 +46,13 @@ func Download(peerId [20]byte, torrent *t.Torrent) (string, error) { // TODO dec
 		}
 	}
 
-	for _, peer := range *peers {
-		//go startWorker(c, peer)
-		fmt.Println(peer)
+	if err := startWorker(c, (*peers)[0]); err != nil {
+		log.Printf("error while connecting to peer: %v", err)
 	}
+
+	//for _, peer := range *peers {
+	//	go startWorker(c, peer)
+	//}
 
 	return "", nil
 }
@@ -62,8 +65,16 @@ func startWorker(client *client, peer p2p.Peer) error {
 	}
 	defer p.Conn.Close()
 
-	// send unchoke
-	// send interested
+	// declare our availability
+	if err := p.SendUnchoke(); err != nil {
+		return err
+	}
+
+	// we are interested in receiving data
+	if err := p.SendInterested(); err != nil {
+		return err
+	}
+
 	// check if bitfield has the piece
 
 	return nil
