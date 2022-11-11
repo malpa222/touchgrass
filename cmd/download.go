@@ -3,7 +3,7 @@ package cmd
 import (
 	"math/rand"
 	"time"
-	c "touchgrass/client"
+	"touchgrass/client"
 	t "touchgrass/torrent"
 
 	"github.com/spf13/cobra"
@@ -25,8 +25,10 @@ var downloadCmd = &cobra.Command{
 			return err
 		}
 
-		client := c.New(peerId)
-		client.Download(torrent)
+		_, err = client.Download(peerId, torrent)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	},

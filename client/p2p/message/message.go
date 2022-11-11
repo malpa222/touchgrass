@@ -1,9 +1,9 @@
 package message
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
+	"io"
 )
 
 type ID byte
@@ -37,12 +37,10 @@ func (msg *Message) Serialize() *[]byte {
 	return &buf
 }
 
-func Deserialize(buf *[]byte) (msg *Message, err error) {
-	reader := bytes.NewReader(*buf)
-
+func Read(r io.Reader) (msg *Message, err error) {
 	// get the length
 	temp := make([]byte, 4)
-	if num, err := reader.Read(temp); err != nil {
+	if num, err := r.Read(temp); err != nil {
 		return nil, err
 	} else if num == 0 {
 		return // keepalive
@@ -53,7 +51,7 @@ func Deserialize(buf *[]byte) (msg *Message, err error) {
 	length := binary.BigEndian.Uint32(temp)
 
 	temp = make([]byte, length)
-	if num, err := reader.Read(temp); err != nil {
+	if num, err := r.Read(temp); err != nil {
 		return nil, err
 	} else if num != int(length) {
 		return nil, errors.New("malformed payload")

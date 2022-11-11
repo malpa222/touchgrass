@@ -1,4 +1,4 @@
-package tracker
+package p2p
 
 import (
 	"encoding/binary"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -27,6 +28,15 @@ type response struct {
 	failure  string
 	interval int
 	peers    *[]Peer
+}
+
+type Peer struct {
+	IP   net.IP
+	Port uint16
+}
+
+func (p *Peer) String() string {
+	return net.JoinHostPort(p.IP.String(), strconv.Itoa(int(p.Port)))
 }
 
 func GetPeers(peerId [20]byte, torrent *t.Torrent) (peers *[]Peer, err error) {

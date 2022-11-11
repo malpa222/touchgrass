@@ -1,8 +1,8 @@
 package handshake
 
 import (
-	"bytes"
 	"errors"
+	"io"
 )
 
 const pstr = "BitTorrent protocol"
@@ -28,12 +28,10 @@ func (hs *Handshake) Serialize() []byte {
 	return buf
 }
 
-func Deserialize(buf []byte) (*Handshake, error) {
-	reader := bytes.NewReader(buf)
-
+func Read(r io.Reader) (*Handshake, error) {
 	// check if the protocol length is correct
 	temp := make([]byte, 1)
-	if num, err := reader.Read(temp); err != nil {
+	if num, err := r.Read(temp); err != nil {
 		return nil, err
 	} else if temp[0] != lenPstr || num == 0 {
 		return nil, errors.New("invalid length")
@@ -41,7 +39,7 @@ func Deserialize(buf []byte) (*Handshake, error) {
 
 	// check if the pstr matches
 	temp = make([]byte, lenPstr)
-	if num, err := reader.Read(temp); err != nil {
+	if num, err := r.Read(temp); err != nil {
 		return nil, err
 	} else if num != lenPstr || string(temp[:]) != pstr {
 		return nil, errors.New("invalid protocol specification")
@@ -49,7 +47,7 @@ func Deserialize(buf []byte) (*Handshake, error) {
 
 	// check the flags
 	temp = make([]byte, lenReserved)
-	if num, err := reader.Read(temp); err != nil {
+	if num, err := r.Read(temp); err != nil {
 		return nil, err
 	} else if num != lenReserved {
 		return nil, errors.New("invalid flags")
@@ -57,7 +55,7 @@ func Deserialize(buf []byte) (*Handshake, error) {
 
 	// try the rest of the Handshake
 	temp = make([]byte, 40)
-	if num, err := reader.Read(temp); err != nil {
+	if num, err := r.Read(temp); err != nil {
 		return nil, err
 	} else if num != len(temp) {
 		return nil, errors.New("invalid peer data")
